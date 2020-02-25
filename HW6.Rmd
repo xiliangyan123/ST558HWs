@@ -1,0 +1,58 @@
+---
+title: "Homework6"
+author: "Michael Yan"
+date: "May 30, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r code, echo=TRUE}
+library(bigrquery)
+library(DBI)
+library(dplyr)
+con <- dbConnect(bigrquery::bigquery(), project = "publicdata", dataset = "samples",
+billing = "st558-hw6-242215")
+
+dbListTables(con)
+
+Shake <- tbl(con, "shakespeare")
+Shake %>% filter(word == 'fantastic') %>% filter(corpus_date <= 1600) %>% collect()
+
+Nty <- tbl(con, "natality")
+Nty %>% select(year, state, is_male, weight_pounds) %>% filter(year < 1970) %>% group_by(state, year) %>%  head(Nty, n=25) %>% collect()
+
+Wiki <- dbGetQuery(con, "SELECT title, id, comment, num_characters FROM wikipedia LIMIT 10")
+Wiki
+
+trigr <- dbGetQuery(con, "SELECT ngram first, second, third FROM trigrams LIMIT 10")
+trigr
+```
+
+```{r codes, echo = TRUE, message=FALSE, warning=FALSE}
+
+library(devtools)
+install_github("lchiffon/wordcloud2")
+library(tidyverse)
+library(tidytext)
+library(stringr)
+library(wordcloud2)
+library(httpuv)
+library(rtweet)
+library(webshot)
+
+tweet <- search_tweets2(q="statistics", n=40, parse=TRUE)
+
+words <- unnest_tokens(tweet, word, text) %>% select(word)
+words
+
+join <- words %>% anti_join(stop_words) %>%  count(word) %>% anti_join(stop_words)
+join
+
+wcloud <- wordcloud2(join)
+wcloud
+
+webshot::install_phantomjs()
+```

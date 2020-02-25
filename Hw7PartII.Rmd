@@ -1,0 +1,152 @@
+---
+title: "Homework 7 Part II"
+author: "Michael Yan"
+date: "June 5, 2019"
+output: 
+  html_document:
+    toc: true 
+    toc_depth: 3
+    toc_float: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
+```
+
+#Iris Data Set
+
+##Introduction
+
+The **Iris flower data set** or **Fisher's Iris data set** is a multivariate dataset introduced by the British statistician and biologist Ronald Fisher in his 1936 paper *The use of multiple measurements in taxonomic problems* as an example of [linear discriminant analysis](https://en.wikipedia.org/wiki/Linear_discriminant_analysis).
+
+```{r, out.width="200px"}
+library(knitr)
+Image <- include_graphics("Fisher.jpg")
+Image
+```
+
+```{r Iris}
+library(tidyverse)
+library(knitr)
+irist <- head(iris, n=6) # get the first 6 obs from iris dataset 
+irist1 <- kable(irist, caption = "Preview of Iris Data") # make into a table
+irist1
+```
+
+##Numerical Summaries by Species
+
+These tables visualize summary statistics for each group of species and their measurements of Sepal/Petal Width/Length. These statistics help us gather information about the iris dataset. 
+
+```{r function}
+library(knitr)
+
+#Comments (refer to # for comment)
+#1. Goal - Create a table of summary statistics for setosa species
+#2. Only want data from setosa species
+#3. find the mean of the data and get rid of 5th column
+#4. find quantiles - min, 1st Qu., etc..
+#5. combine rows
+#6. give new row names, adjust order of rows, rename row names. 
+#7. make a nice table
+#8. Do steps 1-8 for versicolor species
+#9. Do steps 1-8 for virginica species
+
+#1. 
+irisf <- filter(iris, iris$Species=='setosa') #2. 
+
+mean <- sapply(irisf[, -5], mean) #3.
+irisq <- sapply(irisf[ ,-5], quantile) #4. 
+iriscom <- rbind(irisq, mean) #5. 
+
+row.names(iriscom) <- c(1,2,3,5,6,4) #6.
+iriscom1 <- iriscom[order(row.names(iriscom)), ] #6.
+row.names(iriscom1) <- c('Min', '1st Qu.', 'Median', 'Mean', '3rd Qu.', 'Max.') #6.
+kable(round(iriscom1, digits = 1), caption='Summary of Species setosa') #7. 
+
+#8. 
+irisvc <- filter(iris, iris$Species=='versicolor')
+
+mean1 <- sapply(irisvc[, -5], mean)
+irisqvc <- sapply(irisvc[, -5], quantile)
+iriscoma <- rbind(irisqvc, mean1)
+
+row.names(iriscoma) <- c(1,2,3,5,6,4)
+iriscom2 <- iriscoma[order(row.names(iriscoma)), ]
+row.names(iriscom2) <- c('Min', '1st Qu.', 'Median', 'Mean', '3rd Qu.', 'Max.')
+kable(round(iriscom2, digits = 1), caption ='Summary of Species versicolor')
+
+#9.
+irisva <- filter(iris, iris$Species=='virginica')
+
+mean2 <- sapply(irisva[, -5], mean)
+irisqva <- sapply(irisva[, -5], quantile)
+iriscomb <- rbind(irisqva, mean1)
+
+row.names(iriscomb) <- c(1,2,3,5,6,4)
+iriscom3 <- iriscomb[order(row.names(iriscomb)), ]
+row.names(iriscom3) <- c('Min', '1st Qu.', 'Median', 'Mean', '3rd Qu.', 'Max.')
+kable(round(iriscom3, digits = 1), caption ='Summary of Species virginica')
+```
+
+##Visuals
+###Boxplot for Comparison
+
+These plots help us visualize summary statistics of our grouped species with the species and sepal length/width. These plots gives us essentially the quartiles, or spread, of each grouped variable and their sepal length/width statistic. This plot also helps us compare different species with one another as well. 
+
+```{r visual}
+library(ggplot2)
+#Comment contents (labeled by #s)
+#1. Create a boxplot with species by sepal length. Points represent our species
+#2. Create a boxplot with species by sepal width. Points represent our species.
+
+#1.
+g1 <- ggplot(iris, aes(x=Species, y=Sepal.Length))
+g1 + geom_boxplot() + geom_point(aes(col=Species), position='jitter') + labs(title='Boxplot for Sepal Length') 
+
+#2.
+g2 <- ggplot(iris, aes(x=Species, y=Sepal.Width))
+g2 + geom_boxplot() + geom_point(aes(col=Species), position='jitter') + labs(title='Boxplot for Sepal Width') 
+
+```
+
+###Multiple Distributions Present
+
+These plots visualize the value of the sepal length variable and summarizes its density or the distribution of the variable. This shows the frequency and pattern with which we observe our Sepal Length. 
+
+Note: the two plots have the same axes, though one is combined and one is separated into 3 plots. The measurements are also adjusted. 
+
+```{r barchart}
+#Comment contents (labeled by #s)
+#1. Creating a density overlain plot with histogram with density and sepal length
+#2. Creating 3 density plots using faceting 
+
+#1.
+g3 <- ggplot(iris, aes(x=Sepal.Length))
+g3 + geom_histogram(aes(y=..density..), bins = 20 ) + geom_density(adjust=0.4, lwd=3, col='red') + labs(y='Density', title='Histogram for Sepal Length')
+
+#2.
+g4 <- ggplot(iris, aes(x=Sepal.Length))
+g4 + geom_histogram(aes(y=..density..), bins = 20) + geom_density(lwd=2, col='red') + facet_wrap( ~ Species) + labs(y='Density', title = 'Histogram for Sepal Length')
+
+```
+
+###Scatterplot
+
+These plots visualize the grouped species and the comparison of each of their sepal lengths/widths and petal lengths/widths. The line represents a line of best fit, which can measure the relation of each groups sepal/petal length and width. 
+
+```{r scatterplot}
+#Comment contents (labeled by #s)
+#1. Plotting a line of best fit for grouped species based on sepal length/width
+#2. Plotting a line of best fit for grouped species based on petal length/width
+
+#1. 
+g4 <- ggplot(iris, aes(x=Sepal.Length, y=Sepal.Width, group=Species))
+g4 + geom_point(aes(col=Species)) + geom_smooth(method = lm, col='Green') + labs(title='Sepal Length vs Sepal Width') 
+
+#2. 
+g5 <- ggplot(iris, aes(x=Petal.Length, y=Petal.Width, group=Species))
+g5 + geom_point(aes(col=Species)) + geom_smooth(method = lm, col='Green') + labs(title = 'Petal Length vs Petal Width')
+
+```
+
+```

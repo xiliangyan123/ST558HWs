@@ -1,0 +1,17 @@
+---
+title: "Untitled"
+author: "Michael Yan"
+date: "July 11, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE}
+library(plumber)
+
+r <- plumb("HW13A.R")
+r$run(port=80)
+```

@@ -1,0 +1,80 @@
+---
+title: "Homework 11"
+author: "Michael Yan"
+date: "June 25, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Code Steps
+First we begin to read in the appropriate libraries. The caret package is most useful for us in this case. 
+
+The purpose of these steps is to use kNN and to understand how the caret package helps us in predicting misclassification rates compared between our training and testing datasets. 
+
+We hope to compare our actual misclassification rate to our misclassification rate found from the ``train()` and `caret package`. 
+
+```{r data, message=FALSE, warning=FALSE}
+library(readr)
+library(tidyverse)
+library(caret)
+library(e1071)
+library(class)
+
+#reading data/cleaning it
+titanicData <- read_csv("titanic.csv")
+titanicData <- filter(titanicData, !is.na(survived) & !is.na(fare), !is.na(age))
+titanicData$survived <- as.factor(titanicData$survived)
+
+#used to split up our dataset and organize it.
+#set seed is used so we get same value each time. 
+set.seed(1)
+train <- sample(1:nrow(titanicData), size=nrow(titanicData)*0.8)
+test <- dplyr::setdiff(1:nrow(titanicData), train)
+titanicDataTrain <- titanicData[train, ]
+titanicDataTest <- titanicData[test, ]
+
+#find appropriate number of neighbors
+#typically, the value that the console gives us from this code is the best number to use. 
+set.seed(1)
+trctrl <- trainControl(method = "repeatedcv", number=10, repeats=3)
+knn_model <- train(survived ~ age*fare, 
+                   method="knn",
+                   trControl=trctrl,
+                   data=titanicDataTrain,
+                   preProcess=c("center", "scale"),
+                   tuneGrid=expand.grid(k=c(2:30))
+)
+
+#found appropriate neighbors to be 21
+#now we want to model a knn fit. 
+knn_fit <- knn(train = select(titanicDataTrain, survived, age, fare),
+               test=select(titanicDataTest, survived, age, fare),
+               cl=titanicDataTrain$survived,
+               k=21)
+
+#want to predict our misclassification error to our testing dataset. 
+knn_pred <- predict(knn_model, newdata=titanicDataTest)
+
+tbl <- confusionMatrix(knn_pred, titanicDataTest$survived)
+tbl
+misclass1 <- 1-(148/209)
+misclass1
+
+#creating our data into a tibble
+#also view how many 1 and 0s are in the data and see if they match up or not. 
+fitInfo <- tbl_df(data.frame(knn_fit, select(titanicDataTest, survived, fare, age)))
+
+#create contingency table to see the matches and unmatched. 
+#this table represents our fitted model using 21 neigbhors
+tbl1 <- table(fitInfo$knn_fit, fitInfo$survived)
+tbl1 
+
+#find actual misclassification error in the titanicdata test set. 
+#compare our misclassification from the model to the actual misclassification rate. 
+#conclusion: both misclass rates look very similar
+misClass <- 1 - sum(diag(tbl1))/sum(tbl1)
+misClass
+```

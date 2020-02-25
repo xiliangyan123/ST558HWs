@@ -1,0 +1,93 @@
+---
+title: "HW12"
+author: "Michael Yan"
+date: "June 26, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Synopsis
+In this assignment, we are trying to fit 4 different models for our data.
+
+First, we split our data into a testing and training dataset, where we build our models using the training set and evaluate our models (predicting the misclass error) in our testing dataset. 
+
+An important and effective usage here is to implement the `caret` package, which allows us to `train` our dataset and make a fitted model from that. We shall apply different methods to use to create our models, and then we predict and compare them to the testing dataset. 
+
+Once we predict them, we will then put them in a table, which counts the frequencies of our response variable, which is class and whether or not they tested positive or negative for diabetes. Our misclassification error helps us conclude how far off we are from predicting the truth. 
+
+Seems that our overall conclusion states that the bagged tree model provides us with the lowest misclassification error. Thus, we should use this learning method to use in our data. 
+```{r, message=FALSE, warning=FALSE}
+library(readr)
+library(tidyverse)
+library(caret)
+library(dplyr)
+library(knitr)
+
+diabetesdata <- read_csv("diabetes.csv")
+str(diabetesdata)
+set.seed(1)
+train <- sample(1:nrow(diabetesdata), size=nrow(diabetesdata)*0.8)
+test <- dplyr::setdiff(1:nrow(diabetesdata), train)
+diabetesdataTrain <- diabetesdata[train, ]
+diabetesdataTest <- diabetesdata[test, ]
+
+trctrl <- trainControl(method = "repeatedcv", number=10, repeats=3)
+#create a classification tree
+cTree <- train(class ~ ., 
+               method='rpart', 
+               trControl=trctrl, 
+               data=diabetesdataTrain, 
+               preProcess=c("center", "scale"))
+#predict the values for our response variable and compare it to our testing data. 
+cTree_pred <- predict(cTree, newdata = select(diabetesdataTest, -class))
+#a frequency of how many of each response there is. 
+cTreepred <- table(cTree_pred, diabetesdataTest$class)
+misclass1 <- 1-(sum(diag(cTreepred))/sum(cTreepred))
+
+#create bagged tree model
+bagtree <- train(class ~ ., 
+               method='treebag', 
+               trControl=trctrl, 
+               data=diabetesdataTrain, 
+               preProcess=c("center", "scale"))
+#predict the values for our response variable and compare it to our testing data. 
+bagtree_pred <- predict(bagtree, newdata=select(diabetesdataTest, -class))
+#a frequency of how many of each response there is. 
+bgpred <- table(bagtree_pred, diabetesdataTest$class)
+misclass2 <- 1-(sum(diag(bgpred))/sum(bgpred))
+
+#create random forest model
+rforest <- train(class ~ ., 
+               method='rf', 
+               trControl=trctrl, 
+               data=diabetesdataTrain, 
+               preProcess=c("center", "scale"))
+
+#predict the values for our response variable and compare it to our testing data. 
+rforest_pred <- predict(rforest, newdata = select(diabetesdataTest, -class))
+#a frequency of how many of each response there is. 
+rfpred <- table(rforest_pred, diabetesdataTest$class)
+misclass3 <- 1-(sum(diag(rfpred))/sum(rfpred))
+
+#create a boosted tree
+botree <- train(class ~ ., 
+               method = 'gbm', 
+               trControl=trctrl, 
+               data=diabetesdataTrain, 
+               preProcess=c("center", "scale"),
+               verbose = FALSE)
+#predict the values for our response variable and compare it to our testing data. 
+botree_pred <- predict(botree, newdata=diabetesdataTest)
+#a frequency of how many of each response there is. 
+btreepred <- table(botree_pred, diabetesdataTest$class)
+misclass4 <- 1-(sum(diag(btreepred))/sum(btreepred))
+
+misclassr <- rbind(misclass1, misclass2, misclass3, misclass4)
+row.names(misclassr) <- c("Class. Tree", "Bag. Tree", "R. Forest", "Boost. Tree")
+colnames(misclassr) <- c("Misc. Error")
+misclasst <- kable(misclassr, caption = "Misc. Error for 4 models")
+misclasst
+```

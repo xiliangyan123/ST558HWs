@@ -1,0 +1,89 @@
+---
+title: "Homework 4"
+author: "Michael Yan"
+date: "May 26, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r IQR, echo=TRUE, message=FALSE, warning=FALSE}
+getIQR <- function(x, na.rm=TRUE, ...) {
+  if(is.data.frame(x)) {
+   if (dim(x)[2] == 1){ # need to extract 1st column and get the data first to use it! 2 represents the general                             term that we want to apply. # Once we have the data we need, we can then check all the                            necessary conditions
+    x <- x[[1]]
+  }
+  if(!is.numeric(x)) 
+    stop("Not Numeric")
+  if(!is.vector(x))
+    stop("Not a vector")
+}
+  quantile(x, 3/4, names = FALSE, na.rm=TRUE, ...) - quantile(x, 1/4, names = FALSE, na.rm = TRUE, ...)
+} # the return is what is executed last
+
+x <- c(1:10) # create a vector to hold in numbers
+x
+
+results <- getIQR(x) # apply our function to get IQR of our object x and save that result in an object called                            results
+results
+```
+
+```{r titanic, echo=TRUE, message=FALSE, warning=FALSE}
+library(tidyverse)
+titanicdata <- read_csv("titanic.csv")
+
+getIQR(select(titanicdata, age), na.rm=TRUE)
+getIQR(select(titanicdata, fare), na.rm = TRUE)
+
+getIQR(titanicdata$age, na.rm = TRUE)
+getIQR(titanicdata$fare, na.rm = TRUE)
+```
+
+```{r coef, echo=TRUE, message=FALSE, warning=FALSE}
+getCoefVar <- function(y, na.rm = TRUE, ...) {
+  if(is.data.frame(y)) {
+    if (dim(y)[2] == 1) # We want to see if it is a dataframe with 1 column. If so, this is extracted for use and                           allows us to check for conditions down below. 
+    y <- y[[1]]
+  }
+  if(!is.vector(y))
+    stop("Not a vector")
+  if(!is.numeric(y))
+    stop("Not Numeric")
+
+  (sd(y, na.rm = TRUE, ...)) / abs(mean(y, na.rm = TRUE, ...)) # after we check all the conditions, we then compute. 
+}
+```
+
+```{r titanic2, echo=TRUE, message=FALSE, warning=FALSE}
+getCoefVar(select(titanicdata, age), na.rm=TRUE)
+getCoefVar(select(titanicdata, fare), na.rm = TRUE)
+
+getCoefVar(titanicdata$age, na.rm = TRUE)
+getCoefVar(titanicdata$fare, na.rm = TRUE)
+```
+
+```{r final, echo=TRUE, message=FALSE, warning=FALSE}
+getSummaries <- function(z, na.rm=TRUE, ...) {
+  return(list(getIQR = getIQR(z), getCoefVar = getCoefVar(z)))
+}
+
+getSummaries(titanicdata$age, na.rm = TRUE)
+getSummaries(titanicdata$fare, na.rm = TRUE)
+```
+
+Q7 - We dont have to worry about naming a variable sd with the sd function since you can call a variable sd in a list. A function will require parentheses and a variable won't need parentheses. 
+
+```{r infix, echo=TRUE, message=FALSE, warning=FALSE}
+`%+%` <- function(x, y) {
+  cbind(x, y)
+}
+
+df1 <- data.frame(unif = runif(10), norm=rnorm(10))
+df2 <- data.frame(gamma = rgamma(10, shape=1), beta = rbeta(10, shape1 = 5, shape2 = 1))
+vec1 <- rnorm(10, mean=10)
+
+df1 %+% df2
+df1 %+% df2 %+% vec1
+```

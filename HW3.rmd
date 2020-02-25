@@ -1,0 +1,41 @@
+---
+title: "Homework 3"  
+author: "Michael Yan"  
+date: "May 23, 2019"  
+output:   
+  html_document: default  
+  pdf_document: default  
+---
+
+```{r setup, echo=FALSE, include=FALSE}
+library(Lahman)
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r pitch, echo=FALSE, message=FALSE}
+library(tidyverse)
+Pitching <- tbl_df(Pitching) #set pitching dataset as a tibble
+
+Pitching %>% select(ends_with("ID"), W, L, ERA) %>% filter(yearID >= 2010 & yearID <=2015)%>%mutate(WL = (W / (W+L))) %>% arrange(desc(WL)) #use chaining to ease process of extrapolating, filtering, creating rows. 
+```
+
+```{r pitch1, echo=FALSE}
+levels(Pitching$teamID)[which(levels(Pitching$teamID) %in% c('MIA', 'FLO'))] = 'MIA/FLO'
+#Use levels() and Which() functions to only grab MIA and FLO team IDs. Then label them as a 'MIA/FLO' value. 
+```
+
+```{r pitch2, echo=FALSE, message=FALSE}
+Pitching2 <- Pitching %>% filter(yearID >= 2010 & yearID <=2015) %>% group_by(yearID, teamID)  %>% summarise(avgERA = mean(ERA, na.rm=TRUE)) 
+Pitching2
+
+# we want to create a new object
+# use chaining to grab yearIDs
+# each combination of year and team
+# create a new column that provides the avgERA, without any NA values, grouped by team and year. 
+```
+
+```{r wide, echo=FALSE}
+library(knitr)
+x <- Pitching2 %>% spread(key = yearID, value = avgERA) # we want wide columns for each year and each cell has the average ERA. 
+kable(x, align ='r') # create a nice looking table with right alignment. 
+```

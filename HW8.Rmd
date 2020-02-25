@@ -1,0 +1,124 @@
+---
+title: "Homework 8"
+author: "Michael Yan"
+date: "June 13, 2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r ForLoop, message=FALSE}
+
+library(readxl)
+library(dplyr)
+library(tidyverse)
+library(stats)
+
+Data <- read.csv("concentration.csv")
+Data1 <- Data %>% filter(variety=="M.giganteus" | variety=="S.ravennae")
+Data2 <- as.data.frame(Data1)
+
+y <- Data2$Total_lignin
+x <- Data2$concentration
+
+#Define our x variable with 50 replicates
+max <- rep(NA, 50)
+#Set seed helps us to have random numbers each time. 
+set.seed(10)
+
+#We want to sample 50 iterations. 
+#Create our index by having sample function with replacement. 
+#generate our model 
+#max is to create the max variable
+
+for (i in 1:50) {
+  index <- sample(1:42, 42, replace=TRUE)
+  model <- lm(y[index]~x[index] + I(x[index]^2))
+  max[i] = -model$coefficients[2] / 2/model$coefficients[3]
+}
+
+mean(max)
+sd(max)
+
+```
+
+```{r replicate}
+bootfun <- function(Data2, resp, pred) {
+   y <- Data2[, resp]
+   x <- Data2[, pred]
+   index <- sample(1:42, 42, replace=TRUE)
+   model <- lm(y[index]~x[index] + I(x[index]^2))
+   max = -model$coefficients[2] / 2/model$coefficients[3]
+  return(max)
+}
+
+#replicate our data with function 50 times.  
+max2 <- replicate(50, bootfun(Data2, resp = 'Total_lignin', pred = 'concentration'))
+
+#Find mean and sd. 
+mean(max2)
+sd(max2)
+```
+
+```{r wrapper, message=FALSE, warning=FALSE}
+
+#produce a function that will 
+seBootfun <- function(Data2, resp, pred, B) {
+  x <- replicate(B, bootfun(Data2, resp, pred))
+  return(sd(x))
+}
+#Apply glucose as our response variable. 
+sd1 <- seBootfun(Data2, resp = "Glucose", pred = "concentration", B=50)
+sd1
+```
+
+```{r, warning=FALSE, message=FALSE}
+library(parallel)
+library(tidyverse)
+library(knitr)
+
+#detect cores
+cores <- detectCores()
+#make clusters - total of 3
+cluster <- makeCluster(cores-1)
+#export clusters for function and data. 
+clusterExport(cluster, list('seBootfun', "bootfun", "Data2"))
+#export libraries
+invisible(clusterEvalQ(cluster, library(tidyverse)))
+
+#result <- parLapply(cl=cluster, X=c("Total_lignin", "Glucose", "Xylose", "Arabinose"), #fun=seBootfun, pred="concentration", B=50, data=Data2)
+
+#Sadly, couldn't find the reason as to why this couldn't work. Went to office hours too, but could not figure out. :(
+
+#Couldn't figure out how to do parallel computing
+#So I just hardcoded it to make table of max and sd of response variables. 
+Lignin <- replicate(100, bootfun(Data2, resp="Total_lignin", pred="concentration"))
+max.Li <- mean(Lignin) %>% round(digits=2)  
+sd.Li <- sd(Lignin) %>% round(digits=2)  
+
+Glucose <- replicate(100, bootfun(Data2, resp="Glucose", pred="concentration"))
+max.Gl <- mean(Glucose) %>% round(digits=2)  
+sd.Gl <- sd(Glucose) %>% round(digits=2) 
+
+Xylose <- replicate(100, bootfun(Data2, resp="Xylose", pred="concentration"))
+max.Xyl <- mean(Xylose) %>% round(digits=2) 
+sd.Xyl <- sd(Xylose) %>% round(digits=2) 
+
+Arabinose <- replicate(100, bootfun(Data2, resp = "Arabinose", pred="concentration"))
+max.Ara <- mean(Arabinose) %>% round(digits=2)
+sd.Ara <- sd(Arabinose) %>% round(digits=2) 
+
+rows1 <- rbind(max.Li, max.Gl, max.Xyl, max.Ara)
+rows2 <- rbind(sd.Li, sd.Gl, sd.Xyl, sd.Ara)
+alldata <- cbind(rows1, rows2)
+row.names(alldata) <- c("Lignin", "Glucose", "Xylose", "Arabinose")
+colnames(alldata) <- c("Max", "SE")
+kable(alldata)
+```
+
+
+```

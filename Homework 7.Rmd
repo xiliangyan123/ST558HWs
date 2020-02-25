@@ -1,0 +1,118 @@
+---
+title: "Homework 7 Part I"
+author: "Michael Yan"
+date: "June 2, 2019"
+output: 
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Horseshoe Crabs
+```{r crab, echo=FALSE, message=FALSE, warning=FALSE}
+knitr::include_graphics("crab.jpg")
+```
+
+##Introduction
+
+"Horseshoe crabs arrive on the beach in pairs and spawn ... during ... high tides. Unattached males also come to the beach, crowd around the nesting couples and compete with attached males for fertilizations. Satellite males form large groups around some couples while ignoring others, resulting in a nonrandom distribution that cannot be explained by local environmental conditions or habitat selection." (Brockmann, H. J. (1996) Satellite Male Groups in Horseshoe Crabs, Limulus polyphemus, Ethology, 102, 1-21. )
+
+###Data
+We have a data set about 173 mating female crabs. Data collected included whether or not a male satellite was present (and how many if present) and the color, spine condition, weight, and carapace width of the femal crab.
+
+```{r data, echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(knitr)
+library(dplyr)
+library(DT)
+
+crabdata <- read.delim("crabs.txt", sep = "")
+
+cdata <- as.tibble(crabdata)
+cdata$color <- factor(cdata$color)
+cdata$spine <- factor(cdata$spine)
+cdata$y <- factor(cdata$y)
+
+levels(cdata$color) <- c("light", "medium", "dark", "darker")
+levels(cdata$spine) <- c("Both good", "One Worn/Broken", "Both Worn/Broken")
+levels(cdata$y) <- c("No Satellite", "At least 1 Satellite")
+
+names(cdata) <- c("Color", "Spine Condition", "Carapace width", "Satellites Present", "Weight", "Satellite Indicator")
+
+datatable(cdata)
+```
+
+##Numeric Summaries
+
+We'll consider three categorical variables from the data set: female color, spine condiiton, and whether or not a satellite was present. 
+
+###Full table
+
+Here, we see a neatly arranged table plotting the frequencies of each color of the female crab against the spine condition. For each combination of color and spine condition, we have a frequency count. 
+
+```{r fulltable, echo=FALSE, warning=FALSE, message=FALSE}
+kable(table(cdata$Color, cdata$`Spine Condition`), align='r', caption="Color and Spine condition information")
+```
+
+###Table by Satellite Indicator
+
+Similar to the last table, these tables tell the frequency of each combination of spine condition and female crab color. However in these cases, we are dividing our main table into two groups, one with satellite and one without. 
+
+```{r nosattable, echo=FALSE, message=FALSE, warning=FALSE}
+table1 <- table(cdata$`Satellite Indicator`, cdata$`Color`, cdata$`Spine Condition`)
+kable(table1[1, 1:4, 1:3], align='r', caption = 'For female crabs with no satellite')
+kable(table1[2, 1:4, 1:3], align='r', caption = 'For female crabs with at least one satellite')
+```
+
+##Visuals
+
+###One Variable
+
+From what we see below, we can see a barplot with frequency counts for the female crab color, the female crab spine condition, and whether or not the female crab has no satellite or at least one satellite. 
+
+```{r barplot1, echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+
+bplot1a <- ggplot(data=cdata, aes(x= cdata$Color))
+bplot1a + geom_bar() + labs(x="Female Crab Color")
+
+bplot2a <- ggplot(data=cdata, aes(x=cdata$`Spine Condition`))
+bplot2a + geom_bar() + labs(x="Female Crab Spine Condition")
+
+bplot3a <- ggplot(data=cdata, aes(x=cdata$`Satellite Indicator`))
+bplot3a + geom_bar() + labs(x="")
+```
+
+###Two Variables
+
+From these plots, we see a side-by-side plot where there are a couple of items to note. We have colored bars, where the colors represent either a female crab has a satellite or not. Then we plot each categorical variable, such as color and spine condition. The 3rd bar plot is similar in a way that we have colored bars for the color. We then count the number of occurrences that each color appears within spine condition. 
+
+```{r barplot2, echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+
+bplot2a <- ggplot(data=cdata, aes(x= cdata$Color))
+bplot2a + geom_bar(aes(fill=as.factor(cdata$`Satellite Indicator`)), position='dodge') + scale_fill_discrete(name="") + labs(x="Female Crab Color")
+
+bplot2b <- ggplot(data=cdata, aes(x= cdata$`Spine Condition`))
+bplot2b + geom_bar(aes(fill=as.factor(cdata$`Satellite Indicator`)), position='dodge') + scale_fill_discrete(name="") + labs(x="Female Crab Spine Condition")
+
+bplot2c <- ggplot(data=cdata, aes(x= cdata$`Spine Condition`))
+bplot2c + geom_bar(aes(fill=as.factor(cdata$`Color`)), position='dodge') + scale_fill_discrete(name="Female Crab Color", labels=c("light", "medium", "dark", "darker")) + labs(x="Female Crab Spine Condition")
+```
+
+###Three Variables
+In this plot, we have a more advanced plot, with 3 variables. Our x-value is the color of the female crab, and each bar represents whether or not we have a satellite or not. Again, like the previous plots, we are interested in the frequency counts, but this time, the frequency counts are divided into more subgroups, which is the spine condition. 
+
+```{r barplot3, echo=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+
+names(cdata) <- c("Color", "Spine", "Carapace width", "Satellites Present", "Weight", "Satellite Indicator")
+
+barplot3 <- ggplot(data=cdata, aes(x= cdata$Color))
+barplot3 + geom_bar(aes(fill=as.factor(cdata$`Satellite Indicator`)), position='dodge') + labs(x="Female Crab Color") + scale_fill_discrete(name="") + facet_grid(. ~ `Spine`,  labeller=label_both)
+```

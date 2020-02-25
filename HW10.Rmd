@@ -1,0 +1,39 @@
+---
+title: "Homework 10"
+author: "Michael Yan"
+date: "June 21, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+```{r, message=FALSE, warning=FALSE}
+library(readr)
+library(tidyverse)
+library(knitr)
+library(rgl)
+data <- read_csv("Hw10Data.csv") 
+Table <- table(data$Pain, data$Treatment) %>% kable()
+Table
+invisible(as.factor(data$Pain))
+
+#Make Pain numeric - Yes="1", and No="0". 
+pain1 <- ifelse (data$Pain == "No", 0, 1)
+#Fit a logistic model for response variable pain predicted by age, treatment and their interaction. 
+modelfit <- glm(pain1 ~ Age*Treatment, data=data, family = "binomial")
+#A summary of the model, giving us values and model. 
+summary(modelfit)
+
+#predict probability of pain for treatment A and B as well as Age of 70. 
+predict(modelfit, newdata = data.frame(Age=c(70,70), Treatment=c("A", "B")), type="response")
+
+#estimate odds for someone aged 70 and a treatment of A
+exp(predict(modelfit, newdata=data.frame(Age=70, Treatment="A", type="Link")))
+#Plotting the variables in a logistic model. 
+plots <- ggiraphExtra::ggPredict(modelfit)
+plots
+```
+From our model and our plots, we can conclude that there is a linear relationship for the placebo vs a logistic relationship for the drugs A and B. The placebo effect is represented by the blue line and denoted as "P". We can also interpret the idea that patients given the placebo does not show a significant effect on the pain, whereas patients given the treatments A and B have a lower rate of experiencing pain. This goes to say that the treatment effect has a large impact on the response variable. (Similar to the idea of a hypothesis test!)
